@@ -1,0 +1,16 @@
+name: Deploy to Orange Pi
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test runner
+        run: echo "Runner funcionando en $(hostname)"
