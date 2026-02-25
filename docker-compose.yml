@@ -12,7 +12,7 @@ services:
       - "5432:5432"
 
   web:
-    build: .
+    build: ./backend
     container_name: facialy_web
     depends_on:
       - db

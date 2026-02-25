@@ -7,3 +7,4 @@ media/
 *.log
 .vscode/
 profiles/
+node_modules/
