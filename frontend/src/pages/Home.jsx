@@ -144,7 +144,7 @@ export default function Home() {
             <div className="bg-slate-900 rounded-2xl p-6 border border-slate-700 font-mono text-sm">
               <div className="text-slate-500 mb-3 text-xs uppercase tracking-widest">Docker stack</div>
               {[
-                { label: "nginx", detail: "reverse proxy  → /facialy/", color: "text-cyan-400" },
+                { label: "apache", detail: "reverse proxy  → /facialy/", color: "text-cyan-400" },
                 { label: "django + gunicorn", detail: "app + static files", color: "text-green-400" },
                 { label: "postgresql", detail: "access logs + employees", color: "text-blue-400" },
                 { label: "opencv", detail: "face detection + training", color: "text-purple-400" },
