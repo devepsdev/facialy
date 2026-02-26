@@ -307,6 +307,9 @@ export default function Demo() {
   const [recognitionResults, setRecognitionResults] = useState([]);
   const [accessGranted, setAccessGranted] = useState(false);
   const [error, setError] = useState("");
+  // Flag que indica que el stream ya está listo en streamRef y hay que
+  // asignarlo al <video> una vez que React lo haya montado en el DOM.
+  const [streamReady, setStreamReady] = useState(false);
 
   const videoRef = useRef(null);
   const overlayCanvasRef = useRef(null);
@@ -470,6 +473,21 @@ export default function Demo() {
     [captureFrame, clearLoop, trainVisitor]
   );
 
+  // Efecto que se ejecuta DESPUÉS de que React monta el <video> en el DOM.
+  // El problema: cuando step === "camera", VideoPanel (y por tanto <video ref>)
+  // todavía no está renderizado. Al hacer setStep("capturing") + setStreamReady(true)
+  // en el mismo flush, React renderiza VideoPanel y luego este efecto se dispara
+  // con videoRef.current ya apuntando al elemento real.
+  useEffect(() => {
+    if (!streamReady || !videoRef.current || !streamRef.current) return;
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+    video.play()
+      .then(() => startCapturing(visitorName))
+      .catch(() => setError("Error al reproducir el video. Verifica los permisos."));
+    setStreamReady(false);
+  }, [streamReady, visitorName, startCapturing]);
+
   const startCamera = useCallback(async () => {
     setError("");
     try {
@@ -477,17 +495,14 @@ export default function Demo() {
         video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
       });
       streamRef.current = stream;
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        await video.play();
-      }
+      // Primero cambiamos el step para que React monte <VideoPanel> (y el <video>),
+      // y después el useEffect de arriba asigna srcObject ya con el ref disponible.
       setStep("capturing");
-      startCapturing(visitorName);
+      setStreamReady(true);
     } catch {
       setError("No se pudo acceder a la cámara. Verifica los permisos del navegador.");
     }
-  }, [visitorName, startCapturing]);
+  }, []);
 
   const handleCleanup = useCallback(async () => {
     clearLoop();
@@ -579,9 +594,6 @@ export default function Demo() {
         <div className="mt-12 text-center text-xs text-slate-600">
           <p>
             Las imágenes se procesan en el servidor y se eliminan automáticamente tras el entrenamiento.
-          </p>
-          <p className="mt-1">
-            Este es un entorno de demo — no apto para uso en producción real sin cifrado HTTPS.
           </p>
         </div>
       </div>

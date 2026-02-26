@@ -46,7 +46,7 @@ export default function Home() {
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-blue-900/50 border border-blue-700/60 rounded-full px-4 py-1.5 text-sm text-blue-300 mb-8">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            Sistema operativo — Proyecto de portfolio fullstack
+            Sistema operativo — Proyecto fullstack desarrollado por DevEps
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
@@ -58,10 +58,10 @@ export default function Home() {
           </h1>
 
           <p className="text-xl md:text-2xl font-semibold text-white mb-3">
-            Facialy — Sistema de Control de Acceso Facial para Oficinas
+            Facialy — Sistema de Control de Acceso Facial
           </p>
           <p className="text-sm text-slate-400 mb-12 font-mono tracking-wider">
-            deveps · Django + React + OpenCV + Docker + CI/CD
+            Django + React + OpenCV + Docker + CI/CD + Armbian
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -72,7 +72,7 @@ export default function Home() {
               🎥 Probar Demo
             </Link>
             <a
-              href="https://github.com/deveps"
+              href="https://github.com/devepsdev"
               target="_blank"
               rel="noopener noreferrer"
               className="px-8 py-4 bg-slate-700 hover:bg-slate-600 border border-slate-600 hover:border-slate-500 text-white font-semibold text-lg rounded-xl transition-all duration-200"
@@ -200,14 +200,14 @@ export default function Home() {
       {/* ── Footer ── */}
       <footer className="bg-slate-900 border-t border-slate-800 py-8 px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <p>Facialy &mdash; Proyecto de portfolio · Desarrollado por deveps</p>
+          <p>Facialy &mdash; Proyecto Desarrollado por DevEps</p>
           <a
-            href="https://github.com/deveps"
+            href="https://github.com/devepsdev"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-400 hover:text-blue-300 transition-colors"
           >
-            github.com/deveps
+            github.com/devepsdev
           </a>
         </div>
       </footer>
