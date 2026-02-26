@@ -133,3 +133,9 @@ TEMPLATES[0]['DIRS'] = [os.path.join(BASE_DIR, 'frontend_dist')]
 FORCE_SCRIPT_NAME = '/facialy'
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# DRF: sin autenticación por defecto (demo público)
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES': [],
+}
