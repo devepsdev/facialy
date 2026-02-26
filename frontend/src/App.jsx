@@ -5,7 +5,7 @@ import AccessLogs from "./pages/AccessLogs";
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/facialy">
       <nav>
         <Link to="/">Dashboard</Link> |<Link to="/employees">Empleados</Link> |
         <Link to="/access-logs">Accesos</Link>

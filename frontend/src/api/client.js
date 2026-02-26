@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const client = axios.create({
-  baseURL: '/api/',
+  baseURL: '/facialy/api/',
 });
 
 export default client;
