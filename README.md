@@ -42,22 +42,22 @@ Proyecto fullstack desarrollado por **[DevEps](https://github.com/devepsdev)** c
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                     Apache (reverse proxy)               │
-│              http://host/facialy/ → :8000                │
+│                     Apache (reverse proxy)              │
+│              http://host/facialy/ → :8000               │
 └──────────────────────────┬──────────────────────────────┘
                            │
             ┌──────────────▼──────────────┐
-            │   Django 6 + Gunicorn :8000  │
+            │   Django 6 + Gunicorn :8000 │
             │                             │
             │  /facialy/api/*  ──► DRF    │
             │  /facialy/*      ──► SPA    │
-            │  /facialy/static/* WhiteNoise│
+            │  /facialy/static/*WhiteNoise│
             └──────┬──────────────┬───────┘
                    │              │
         ┌──────────▼──┐   ┌───────▼──────────┐
-        │ PostgreSQL  │   │  OpenCV EigenFace │
-        │  (logs +    │   │  face_model.xml   │
-        │  employees) │   │  label_map.json   │
+        │ PostgreSQL  │   │ OpenCV EigenFace │
+        │  (logs +    │   │  face_model.xml  │
+        │  employees) │   │  label_map.json  │
         └─────────────┘   └──────────────────┘
 ```
 
@@ -67,7 +67,7 @@ Proyecto fullstack desarrollado por **[DevEps](https://github.com/devepsdev)** c
 Browser                           Django
   │                                 │
   │── POST /api/capture-frame/ ────►│  Haar Cascade detecta cara
-  │   (base64 JPEG × 100)          │  Guarda 160×160 px en /face_data/
+  │   (base64 JPEG × 100)           │  Guarda 160×160 px en /face_data/
   │                                 │
   │── POST /api/train/ ────────────►│  EigenFaceRecognizer.train()
   │                                 │  Guarda face_model.xml
