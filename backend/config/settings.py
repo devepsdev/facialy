@@ -130,3 +130,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend_dist')]
 TEMPLATES[0]['DIRS'] = [os.path.join(BASE_DIR, 'frontend_dist')]
+FORCE_SCRIPT_NAME = '/facialy'
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
