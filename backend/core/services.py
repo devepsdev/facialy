@@ -142,7 +142,7 @@ def recognize_from_frame(frame):
         label, confidence = recognizer.predict(face_crop)
 
         name = label_map.get(str(label), 'Desconocido')
-        if confidence >= 8000:
+        if confidence >= 12000:
             name = 'Desconocido'
 
         results.append({

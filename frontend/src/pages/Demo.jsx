@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import client from "../api/client";
 
 const TOTAL = 100;
@@ -125,6 +126,7 @@ function VideoPanel({
   accessGranted,
   recognitionResults,
   visitorName,
+  employeeId,
   onCleanup,
 }) {
   const progress = Math.min((captureCount / TOTAL) * 100, 100);
@@ -249,8 +251,8 @@ function VideoPanel({
         )}
 
         {step === "recognizing" && (
-          <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700 space-y-4">
+            <div className="flex items-center justify-between">
               <h3 className="text-white font-semibold">Reconocimiento en vivo</h3>
               <button
                 onClick={onCleanup}
@@ -259,6 +261,21 @@ function VideoPanel({
                 🗑 Limpiar y reiniciar
               </button>
             </div>
+
+            {employeeId && (
+              <div className="flex items-center gap-3 bg-blue-900/30 border border-blue-700/60 rounded-xl px-4 py-3">
+                <span className="text-blue-300 text-sm">
+                  ✅ <strong>{visitorName}</strong> registrado como empleado #{employeeId}
+                </span>
+                <Link
+                  to="/employees"
+                  className="ml-auto text-xs text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2 transition-colors whitespace-nowrap"
+                >
+                  Completar perfil →
+                </Link>
+              </div>
+            )}
+
             {recognitionResults.length === 0 ? (
               <p className="text-slate-400 text-sm">
                 Posiciónate frente a la cámara para ser identificado...
@@ -306,6 +323,7 @@ export default function Demo() {
   const [captureMessage, setCaptureMessage] = useState("Preparando...");
   const [recognitionResults, setRecognitionResults] = useState([]);
   const [accessGranted, setAccessGranted] = useState(false);
+  const [employeeId, setEmployeeId] = useState(null);
   const [error, setError] = useState("");
   // Flag que indica que el stream ya está listo en streamRef y hay que
   // asignarlo al <video> una vez que React lo haya montado en el DOM.
@@ -430,7 +448,8 @@ export default function Demo() {
   const trainVisitor = useCallback(async () => {
     setStep("training");
     try {
-      await client.post("train/");
+      const { data } = await client.post("train/", { visitor_name: visitorNameRef.current });
+      if (data.employee_id) setEmployeeId(data.employee_id);
       setStep("recognizing");
       startRecognizing();
     } catch {
@@ -524,6 +543,7 @@ export default function Demo() {
     setCaptureMessage("Preparando...");
     setRecognitionResults([]);
     setAccessGranted(false);
+    setEmployeeId(null);
     setError("");
   }, [clearLoop, stopCamera]);
 
@@ -585,6 +605,7 @@ export default function Demo() {
               accessGranted={accessGranted}
               recognitionResults={recognitionResults}
               visitorName={visitorName}
+              employeeId={employeeId}
               onCleanup={handleCleanup}
             />
           )}

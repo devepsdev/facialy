@@ -57,10 +57,23 @@ def capture_frame(request):
 
 @api_view(['POST'])
 def train(request):
-    """Entrena el modelo con las imágenes capturadas y borra las fotos del disco."""
+    """Entrena el modelo con las imágenes capturadas y borra las fotos del disco.
+    Si se proporciona visitor_name, crea un registro de Employee en la BD."""
+    visitor_name = request.data.get('visitor_name', '').strip()
     success = train_model()
     if success:
-        return Response({'success': True, 'message': 'Modelo entrenado correctamente'})
+        employee_id = None
+        if visitor_name:
+            parts = visitor_name.split(' ', 1)
+            first_name = parts[0]
+            last_name = parts[1] if len(parts) > 1 else ''
+            emp = Employee.objects.create(first_name=first_name, last_name=last_name)
+            employee_id = emp.id
+        return Response({
+            'success': True,
+            'message': 'Modelo entrenado correctamente',
+            'employee_id': employee_id,
+        })
     return Response(
         {'success': False, 'message': 'No hay suficientes imágenes para entrenar'},
         status=status.HTTP_400_BAD_REQUEST,
