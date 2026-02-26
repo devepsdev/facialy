@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import client from '../api/client';
+import { useState, useEffect } from "react";
+import client from "../api/client";
 
 function Dashboard() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    client.get('dashboard/')
-      .then(res => setStats(res.data))
-      .catch(err => console.error(err));
+    client
+      .get("dashboard/")
+      .then((res) => setStats(res.data))
+      .catch((err) => console.error(err));
   }, []);
 
   if (!stats) return <p>Cargando...</p>;
