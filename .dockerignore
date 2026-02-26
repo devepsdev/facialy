@@ -4,5 +4,5 @@ venv/
 __pycache__/
 profiles/
 .vscode/
-frontend/
 backend/venv/
+node_modules/
