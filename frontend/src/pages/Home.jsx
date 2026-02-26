@@ -38,7 +38,7 @@ export default function Home() {
       {/* ── Hero ── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900" />
+        <div className="absolute inset-0 bg-linear-to-br from-slate-900 via-blue-950 to-slate-900" />
         {/* Decorative orbs */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -52,7 +52,7 @@ export default function Home() {
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
             <span className="text-white">Control de Acceso</span>
             <br />
-            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
               FACIAL
             </span>
           </h1>
@@ -181,7 +181,7 @@ export default function Home() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-24 bg-gradient-to-b from-slate-900 to-blue-950/60 px-4">
+      <section className="py-24 bg-linear-to-b from-slate-900 to-blue-950/60 px-4">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">¿Listo para probarlo?</h2>
           <p className="text-slate-400 text-lg mb-10">
