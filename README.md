@@ -314,3 +314,11 @@ La app estará en `http://localhost:5173`.
 
 Proyecto de portfolio — uso libre para referencia y aprendizaje.
 Desarrollado por **DevEps** · [github.com/devepsdev](https://github.com/devepsdev)
+
+## Contacto
+
+- Portfolio: [deveps.ddns.net](https://deveps.ddns.net)
+- Email: devepsdev@gmail.com
+- LinkedIn: [www.linkedin.com/in/enrique-perez-sanchez](https://www.linkedin.com/in/enrique-perez-sanchez/)
+- GitHub: [github.com/devepsdev](https://github.com/devepsdev)
+
