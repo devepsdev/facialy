@@ -22,7 +22,22 @@ def _get_capture_count(visitor_name):
 
 
 def capture_face_from_base64(visitor_name, base64_frame):
-    """Decodifica un frame en base64, detecta la cara y la guarda en disco."""
+    """Decodifica un frame en base64, detecta la cara y la guarda en disco.
+
+    Utiliza Haar Cascade para detectar rostros en el frame. Si se detecta una cara,
+    la extrae, la redimensiona a 160×160 píxeles y la guarda en /face_data/{visitor_name}/.
+    Si la decodificación falla o no hay cara detectada, devuelve el conteo actual.
+
+    Args:
+        visitor_name (str): Nombre del visitante. Se usa como nombre de carpeta.
+        base64_frame (str): Frame en formato base64 (con o sin prefijo 'data:image/jpeg;base64,').
+
+    Returns:
+        dict: Diccionario con claves:
+            - 'count' (int): Número total de caras capturadas para este visitante.
+            - 'total' (int): Número objetivo de caras (TOTAL_IMAGES = 100).
+            - 'face_detected' (bool): True si se detectó y guardó una cara, False en caso contrario.
+    """
     if ',' in base64_frame:
         base64_frame = base64_frame.split(',')[1]
 
@@ -61,7 +76,18 @@ def capture_face_from_base64(visitor_name, base64_frame):
 
 
 def train_model():
-    """Entrena EigenFaceRecognizer con las imágenes capturadas y borra las fotos."""
+    """Entrena EigenFaceRecognizer con las imágenes capturadas y borra las fotos.
+
+    Lee todas las imágenes de /face_data/ organizadas por carpeta (visitante).
+    Entrena un modelo EigenFaceRecognizer con las caras detectadas, guarda el modelo
+    como face_model.xml y crea un mapa de labels (label_map.json) para asociar IDs
+    con nombres. Finalmente, elimina todas las imágenes del disco (GDPR-friendly).
+
+    Requiere al menos 2 imágenes para entrenar.
+
+    Returns:
+        bool: True si el entrenamiento fue exitoso, False si no hay datos suficientes.
+    """
     if not os.path.exists(DATA_DIR):
         return False
 
@@ -103,7 +129,27 @@ def train_model():
 
 
 def recognize_from_base64(base64_frame):
-    """Decodifica un frame en base64 y ejecuta reconocimiento facial."""
+    """Decodifica un frame en base64 y ejecuta reconocimiento facial.
+
+    Convierte el frame de base64 a OpenCV, luego utiliza el modelo EigenFaceRecognizer
+    entrenado para predecir identidades. Solo devuelve resultados si el modelo
+    (face_model.xml) y el mapa de labels (label_map.json) existen.
+
+    Args:
+        base64_frame (str): Frame en formato base64 (con o sin prefijo 'data:image/jpeg;base64,').
+
+    Returns:
+        list: Lista de diccionarios con resultados de reconocimiento:
+            [
+                {
+                    'name': str,         # Nombre predicho o 'Desconocido'
+                    'confidence': float, # Distancia EigenFace (menor = mejor, >12000 = desconocido)
+                    'box': [x, y, w, h]  # Coordenadas del bounding box
+                },
+                ...
+            ]
+            Lista vacía si no se puede decodificar, no hay modelo o no se detectan caras.
+    """
     if ',' in base64_frame:
         base64_frame = base64_frame.split(',')[1]
 
@@ -155,7 +201,19 @@ def recognize_from_frame(frame):
 
 
 def cleanup_visitor():
-    """Elimina fotos, modelo XML y label map del visitante demo."""
+    """Elimina fotos, modelo XML y label map del visitante demo.
+
+    Limpia completamente todos los artefactos generados durante la sesión de demo:
+    - /face_data/ (carpeta con imágenes capturadas)
+    - face_model.xml (modelo EigenFaceRecognizer serializado)
+    - label_map.json (mapa de IDs a nombres)
+
+    Se ejecuta al finalizar la sesión de demo para liberar espacio y evitar residuos.
+    Los errores se ignoran silenciosamente para robustez.
+
+    Returns:
+        None
+    """
     shutil.rmtree(DATA_DIR, ignore_errors=True)
     if os.path.exists(MODEL_PATH):
         os.remove(MODEL_PATH)
