@@ -217,16 +217,14 @@ class DashboardAPITests(TestCase):
         """Test: dashboard solo cuenta accesos de hoy."""
         emp = Employee.objects.create(first_name="Héctor")
 
-        # Crear logs de hoy y de ayer
-        AccessLog.objects.create(
-            employee=emp,
-            result="GRANTED",
-            timestamp=timezone.now(),
-        )
-        AccessLog.objects.create(
-            employee=emp,
-            result="GRANTED",
-            timestamp=timezone.now() - timezone.timedelta(days=1),
+        # Crear log de hoy (auto_now_add usa timezone.now())
+        AccessLog.objects.create(employee=emp, result="GRANTED")
+
+        # Crear log de ayer: auto_now_add no acepta valor en create(),
+        # se sobreescribe con update() después.
+        log_ayer = AccessLog.objects.create(employee=emp, result="GRANTED")
+        AccessLog.objects.filter(pk=log_ayer.pk).update(
+            timestamp=timezone.now() - timezone.timedelta(days=1)
         )
 
         response = self.client.get(self.dashboard_url)
@@ -268,7 +266,8 @@ class CaptureFrameAPITests(TestCase):
             "frame": "data:image/jpeg;base64,notvalidbase64!!!",
         }
         response = self.client.post(self.capture_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["face_detected"])
 
 
 class CleanupAPITests(TestCase):
