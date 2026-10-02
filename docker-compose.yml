@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: facialy_db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -9,17 +10,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   web:
     build: .
     container_name: facialy_web
+    restart: unless-stopped
     depends_on:
       - db
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
 volumes:
   postgres_data:
