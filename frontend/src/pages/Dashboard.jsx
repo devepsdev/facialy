@@ -77,7 +77,7 @@ function WeekChart({ days }) {
         })}
       </svg>
       {hover != null && (
-        <div className="glass pointer-events-none absolute top-2 right-2 rounded-xl bg-ink-900/90 px-3.5 py-2.5 text-xs">
+        <div className="glass-solid pointer-events-none absolute top-2 right-2 rounded-xl px-3.5 py-2.5 text-xs">
           <p className="mb-1.5 font-semibold text-white capitalize">{label(days[hover].date)}</p>
           {[["granted", "Concedidos"], ["denied", "Denegados"], ["unknown", "Desconocidos"]].map(([k, l]) => (
             <p key={k} className="flex items-center gap-2 text-slate-300">

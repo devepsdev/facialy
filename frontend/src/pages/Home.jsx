@@ -98,7 +98,7 @@ function Stat({ value, suffix, label }) {
 
 function FloatingChip({ className, children, delay = "0s" }) {
   return (
-    <div className={cx("glass absolute z-20 flex items-center gap-2.5 rounded-2xl bg-ink-900/70 px-3.5 py-2.5 text-xs shadow-2xl", className)}>
+    <div className={cx("glass-solid absolute z-30 flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs shadow-2xl", className)}>
       <div className="animate-float flex items-center gap-2.5" style={{ animationDelay: delay }}>{children}</div>
     </div>
   );
@@ -183,8 +183,8 @@ export default function Home() {
             <div className="mouse-layer absolute inset-0" style={{ "--depth": 18 }}>
               <FaceMesh className="relative size-full drop-shadow-[0_0_40px_rgb(34_211_238/0.25)]" />
             </div>
-            <div className="mouse-layer absolute inset-0" style={{ "--depth": 34 }}>
-              <FloatingChip className="top-[8%] -left-2 sm:-left-8">
+            <div className="mouse-layer pointer-events-none absolute inset-0 z-30" style={{ "--depth": 34 }}>
+              <FloatingChip className="top-[19%] -left-2 sm:-left-10">
                 <span className="grid size-8 place-items-center rounded-lg bg-emerald-400/15 text-emerald-300"><ShieldCheck className="size-4.5" /></span>
                 <div>
                   <p className="font-semibold text-white">ACCESO CONCEDIDO</p>
@@ -198,7 +198,7 @@ export default function Home() {
                   <p className="font-mono text-[11px] text-slate-400">umbral 0.40 · SFace 128-d</p>
                 </div>
               </FloatingChip>
-              <FloatingChip className="bottom-[4%] left-[6%]" delay="-4s">
+              <FloatingChip className="bottom-[9%] left-[10%]" delay="-4s">
                 <span className="grid size-8 place-items-center rounded-lg bg-violet-400/15 text-violet-300"><GitBranch className="size-4.5" /></span>
                 <div>
                   <p className="font-semibold text-white">CI/CD → Orange Pi 5</p>

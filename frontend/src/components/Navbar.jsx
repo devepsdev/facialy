@@ -45,7 +45,7 @@ export default function Navbar() {
       <nav
         className={cx(
           "mx-auto flex h-14 max-w-6xl items-center justify-between rounded-2xl border px-3 transition-all duration-300 sm:px-4",
-          scrolled || open ? "glass border-white/10 bg-ink-900/70" : "border-transparent",
+          scrolled || open ? "glass-solid bg-ink-900/85! backdrop-blur-xl" : "border-transparent",
         )}
       >
         <Link to="/" viewTransition className="group flex items-center gap-2.5">
@@ -95,7 +95,7 @@ export default function Navbar() {
       </nav>
 
       {open && (
-        <div className="glass mx-auto mt-2 max-w-6xl animate-pop rounded-2xl bg-ink-900/90 p-2 md:hidden">
+        <div className="glass-solid mx-auto mt-2 max-w-6xl animate-pop rounded-2xl p-2 md:hidden">
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} className={({ isActive }) => cx("flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium", isActive ? "bg-white/10 text-white" : "text-slate-300")}>
               <Icon className="size-4.5" /> {label}

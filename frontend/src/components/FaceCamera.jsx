@@ -22,7 +22,7 @@ export default function FaceCamera({ camera, faces = [], scanning = false, child
 
   return (
     <div
-      className={cx("glass relative mx-auto w-full overflow-hidden rounded-3xl bg-black", className)}
+      className={cx("glass-solid relative mx-auto w-full overflow-hidden rounded-3xl bg-black!", className)}
       style={{ aspectRatio: aspect, maxWidth: 720 }}
     >
       {/* El vídeo se muestra en espejo (como un selfie); las cajas se espejan a mano */}

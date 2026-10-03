@@ -198,7 +198,7 @@ export function Modal({ open, onClose, title, children, wide, locked }) {
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !locked && onClose()} />
-      <div className={cx("glass relative my-8 w-full animate-pop rounded-3xl bg-ink-900/90 p-6 sm:p-7", wide ? "max-w-2xl" : "max-w-lg")}>
+      <div className={cx("glass-solid relative my-8 w-full animate-pop rounded-3xl p-6 sm:p-7", wide ? "max-w-2xl" : "max-w-lg")}>
         <div className="mb-5 flex items-start justify-between gap-4">
           <h2 className="font-display text-xl font-semibold text-white">{title}</h2>
           <button onClick={onClose} disabled={locked} aria-label="Cerrar" className="-m-1 rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white disabled:opacity-40">
@@ -235,7 +235,7 @@ export function ToastProvider({ children }) {
         {toasts.map((t) => {
           const Icon = TOAST_ICON[t.type];
           return (
-            <div key={t.id} className="glass pointer-events-auto flex animate-pop items-start gap-3 rounded-xl bg-ink-800/90 p-3.5 text-sm text-slate-100">
+            <div key={t.id} className="glass-solid pointer-events-auto flex animate-pop items-start gap-3 rounded-xl p-3.5 text-sm text-slate-100">
               <Icon className={cx("mt-0.5 size-5 shrink-0", TOAST_COLOR[t.type])} />
               <span>{t.message}</span>
             </div>
