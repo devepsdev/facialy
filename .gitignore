@@ -8,3 +8,12 @@ media/
 .vscode/
 profiles/
 node_modules/
+backend/models/*.onnx
+backend/staticfiles/
+backend/frontend_dist/
+frontend/dist/
+.claude/
+.env.local
+deploy/apache.local.conf
+deploy/*.log
+deploy/.*

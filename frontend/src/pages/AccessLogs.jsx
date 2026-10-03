@@ -1,166 +1,130 @@
-import { useState, useEffect } from "react";
-import client from "../api/client";
+import { useCallback, useEffect, useState } from "react";
+import { ClipboardList, Download, Search, X } from "lucide-react";
+import client, { errorMessage } from "../api/client";
+import { Avatar, Button, Card, EmptyState, PageShell, REASON_LABEL, ResultBadge, Spinner, cx, inputClass, useToast } from "../components/ui";
 
-const RESULT_CONFIG = {
-  GRANTED: {
-    label: "CONCEDIDO",
-    color: "bg-green-900/60 text-green-300 border border-green-700",
-    icon: "✅",
-  },
-  DENIED: {
-    label: "DENEGADO",
-    color: "bg-red-900/60 text-red-300 border border-red-800",
-    icon: "❌",
-  },
-  UNKNOWN: {
-    label: "DESCONOCIDO",
-    color: "bg-yellow-900/60 text-yellow-300 border border-yellow-700",
-    icon: "❓",
-  },
-};
+const PAGE_SIZE = 20;
+const RESULTS = [
+  { key: "", label: "Todos" },
+  { key: "GRANTED", label: "Concedidos" },
+  { key: "DENIED", label: "Denegados" },
+  { key: "UNKNOWN", label: "Desconocidos" },
+];
+
+const dateFmt = (iso) => new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+const timeFmt = (iso) => new Date(iso).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 export default function AccessLogs() {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const toast = useToast();
+  const [rows, setRows] = useState(null);
+  const [count, setCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [result, setResult] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [search, setSearch] = useState("");
+  const [q, setQ] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    client
-      .get("access-logs/")
-      .then((r) => setLogs(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    const id = setTimeout(() => { setQ(search); setPage(1); }, 300);
+    return () => clearTimeout(id);
+  }, [search]);
 
-  if (loading) {
-    return (
-      <div className="pt-16 min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const filters = useCallback(() => ({ result: result || undefined, date_from: dateFrom || undefined, date_to: dateTo || undefined, q: q || undefined }), [result, dateFrom, dateTo, q]);
+
+  useEffect(() => {
+    client.get("access-logs/", { params: { ...filters(), page, page_size: PAGE_SIZE } })
+      .then((r) => { setRows(r.data.results); setCount(r.data.count); })
+      .catch((e) => { toast.error(errorMessage(e)); setRows([]); });
+  }, [filters, page, toast]);
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const { data } = await client.get("access-logs/export/", { params: filters(), responseType: "blob" });
+      const url = URL.createObjectURL(data);
+      const a = Object.assign(document.createElement("a"), { href: url, download: `accesos-${new Date().toISOString().slice(0, 10)}.csv` });
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error(errorMessage(e, "No se pudo exportar."));
+    }
+    setExporting(false);
+  };
+
+  const hasFilters = result || dateFrom || dateTo || search;
+  const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
   return (
-    <div className="pt-16 min-h-screen bg-slate-900">
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-1">Registro de Accesos</h1>
-          <p className="text-slate-400">
-            Historial completo de intentos de acceso al sistema
-          </p>
+    <PageShell
+      title="Registro de accesos"
+      subtitle={`${count.toLocaleString("es-ES")} eventos${hasFilters ? " con los filtros aplicados" : ""}.`}
+      actions={<Button variant="secondary" onClick={exportCsv} loading={exporting}><Download className="size-4" /> Exportar CSV</Button>}
+    >
+      <div className="mb-6 flex flex-wrap items-end gap-3">
+        <div className="relative min-w-56 flex-1 sm:max-w-xs">
+          <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-500" />
+          <input className={inputClass + " pl-10"} placeholder="Buscar empleado…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Buscar empleado" />
         </div>
+        <div className="flex gap-1.5 rounded-xl border border-white/8 bg-white/3 p-1">
+          {RESULTS.map((r) => (
+            <button key={r.key} onClick={() => { setResult(r.key); setPage(1); }} className={cx("rounded-lg px-3 py-1.5 text-xs font-medium transition-colors", result === r.key ? "bg-white/12 text-white" : "text-slate-400 hover:text-white")}>{r.label}</button>
+          ))}
+        </div>
+        <label className="text-xs text-slate-400">Desde<input type="date" value={dateFrom} max={dateTo || undefined} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className={inputClass + " mt-1 block w-40 scheme-dark"} /></label>
+        <label className="text-xs text-slate-400">Hasta<input type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className={inputClass + " mt-1 block w-40 scheme-dark"} /></label>
+        {hasFilters && <Button variant="ghost" size="sm" onClick={() => { setResult(""); setDateFrom(""); setDateTo(""); setSearch(""); setPage(1); }}><X className="size-3.5" /> Limpiar</Button>}
+      </div>
 
-        {/* Summary badges */}
-        {logs.length > 0 && (
-          <div className="flex flex-wrap gap-3 mb-6">
-            {Object.entries(RESULT_CONFIG).map(([key, cfg]) => {
-              const count = logs.filter((l) => l.result === key).length;
-              return (
-                <div
-                  key={key}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold ${cfg.color}`}
-                >
-                  <span>{cfg.icon}</span>
-                  <span>
-                    {count} {cfg.label.toLowerCase()}
-                    {count !== 1 ? "s" : ""}
-                  </span>
-                </div>
-              );
-            })}
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-slate-700 text-slate-300 border border-slate-600">
-              📋 {logs.length} total
-            </div>
+      <Card className="overflow-hidden">
+        {rows === null ? (
+          <div className="flex justify-center py-24"><Spinner className="size-8" /></div>
+        ) : rows.length === 0 ? (
+          <EmptyState icon={ClipboardList} title="Sin eventos" text={hasFilters ? "Ningún acceso coincide con los filtros." : "Cuando alguien pase por el kiosco aparecerá aquí."} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b border-white/8 text-left text-xs tracking-wider text-slate-500 uppercase">
+                  <th className="px-5 py-3.5 font-medium">Fecha</th>
+                  <th className="px-5 py-3.5 font-medium">Empleado</th>
+                  <th className="px-5 py-3.5 font-medium">Resultado</th>
+                  <th className="px-5 py-3.5 font-medium">Similitud</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/6">
+                {rows.map((l) => (
+                  <tr key={l.id} className="transition-colors hover:bg-white/3">
+                    <td className="px-5 py-3.5 whitespace-nowrap"><span className="text-slate-200">{dateFmt(l.timestamp)}</span> <span className="ml-1 font-mono text-xs text-slate-500">{timeFmt(l.timestamp)}</span></td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={l.employee_name} size="sm" />
+                        <div><p className="text-slate-100">{l.employee_name}</p>{l.department && <p className="text-xs text-slate-500">{l.department}</p>}</div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5"><div className="flex flex-wrap items-center gap-2"><ResultBadge result={l.result} />{l.reason && <span className="text-xs text-slate-500">{REASON_LABEL[l.reason]}</span>}</div></td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-1.5 w-20 rounded-full bg-white/8"><div className={cx("h-full rounded-full", l.result === "UNKNOWN" ? "bg-amber-400" : "bg-cyan-400")} style={{ width: `${Math.min(l.confidence, 1) * 100}%` }} /></div>
+                        <span className="font-mono text-xs text-slate-400 tabular-nums">{l.confidence.toFixed(2)}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
+      </Card>
 
-        {/* Table */}
-        <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white">Historial</h2>
-            <span className="text-slate-400 text-sm">{logs.length} registros</span>
-          </div>
-
-          {logs.length === 0 ? (
-            <div className="p-16 text-center text-slate-500">
-              <p className="text-5xl mb-4">🔓</p>
-              <p>No hay registros de acceso aún.</p>
-              <p className="mt-2 text-xs">
-                Usa la{" "}
-                <a href="/facialy/demo" className="text-blue-400 hover:underline">
-                  Demo interactiva
-                </a>{" "}
-                para generar entradas en el historial.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-700/40">
-                  <tr>
-                    {[
-                      "#",
-                      "Fecha / Hora",
-                      "Empleado / Visitante",
-                      "Resultado",
-                      "Distancia",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/60">
-                  {logs.map((log, idx) => {
-                    const cfg = RESULT_CONFIG[log.result] || {
-                      label: log.result,
-                      color: "bg-slate-700 text-slate-300",
-                      icon: "—",
-                    };
-                    return (
-                      <tr
-                        key={log.id}
-                        className="hover:bg-slate-700/30 transition-colors"
-                      >
-                        <td className="px-6 py-4 text-xs text-slate-600 font-mono">
-                          #{idx + 1}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-300 font-mono">
-                          {new Date(log.timestamp).toLocaleString("es-ES", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                          })}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-white">
-                          {log.employee_name || "—"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.color}`}
-                          >
-                            {cfg.icon} {cfg.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-400 font-mono">
-                          {Math.round(log.confidence)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {pages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-3 text-sm text-slate-400">
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
+          Página {page} de {pages}
+          <Button variant="secondary" size="sm" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Siguiente</Button>
         </div>
-      </div>
-    </div>
+      )}
+    </PageShell>
   );
 }

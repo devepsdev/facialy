@@ -1,19 +1,58 @@
-name: Deploy to Orange Pi
+name: CI/CD
 
 on:
   push:
     branches: [main]
+  pull_request:
 
 permissions:
   contents: read
 
-concurrency:
-  group: deploy
-  cancel-in-progress: false
-
 jobs:
+  test:
+    name: Tests y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Backend · dependencias y modelos
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          python download_models.py
+
+      - name: Backend · tests
+        working-directory: backend
+        run: python manage.py test
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend · lint y build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
   deploy:
+    name: Desplegar en Orange Pi
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: self-hosted
+
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
 
     steps:
       - name: Checkout code
@@ -21,24 +60,34 @@ jobs:
 
       - name: Create .env file
         run: |
-          cd ${{ github.workspace }}
           umask 077
-          echo "DB_NAME=${{ secrets.DB_NAME }}" > .env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "DB_HOST=db" >> .env
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          {
+            echo "DB_NAME=${{ secrets.DB_NAME }}"
+            echo "DB_USER=${{ secrets.DB_USER }}"
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+            echo "DB_HOST=db"
+            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}"
+            echo "ADMIN_USER=${{ secrets.ADMIN_USER }}"
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+            echo "GUEST_LOGIN_ENABLED=${{ vars.GUEST_LOGIN_ENABLED || 'true' }}"
+            echo "SEED_DEMO=${{ vars.SEED_DEMO || 'true' }}"
+            echo "REGISTRATION_ENABLED=${{ vars.REGISTRATION_ENABLED || 'true' }}"
+          } > .env
           chmod 600 .env
 
       - name: Build and deploy
-        run: |
-          cd ${{ github.workspace }}
-          docker compose up -d --build
+        run: docker compose up -d --build
 
-      - name: Wait for database
-        run: sleep 10
-
-      - name: Run migrations
+      - name: Wait for healthy service
         run: |
-          cd ${{ github.workspace }}
-          docker compose exec web python manage.py migrate
+          for i in $(seq 1 40); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' facialy_web 2>/dev/null || echo starting)
+            echo "facialy_web: $status"
+            [ "$status" = "healthy" ] && exit 0
+            sleep 3
+          done
+          docker compose logs --tail 80 web
+          exit 1
+
+      - name: Prune old images
+        run: docker image prune -f

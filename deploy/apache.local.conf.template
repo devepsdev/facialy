@@ -1,0 +1,29 @@
+# Apache mínimo (XAMPP) que replica el proxy de producción:  /facialy/*  ->  Django :8000/*
+# Se genera deploy/apache.local.conf a partir de esta plantilla (scripts/local-up.ps1).
+ServerRoot "@XAMPP@/apache"
+Listen @PORT@
+ServerName localhost
+PidFile "@ROOT@/deploy/.httpd.pid"
+
+LoadModule authz_core_module modules/mod_authz_core.so
+LoadModule log_config_module modules/mod_log_config.so
+LoadModule alias_module modules/mod_alias.so
+LoadModule headers_module modules/mod_headers.so
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+
+ErrorLog "@ROOT@/deploy/apache-error.log"
+LogLevel warn
+
+<Directory />
+    AllowOverride None
+    Require all denied
+</Directory>
+
+# Cabeceras que Django espera detrás del proxy (en producción las pone Apache + Let's Encrypt)
+RequestHeader set X-Forwarded-Proto "http"
+
+ProxyRequests Off
+ProxyPass        /facialy/ http://127.0.0.1:8000/
+ProxyPassReverse /facialy/ http://127.0.0.1:8000/
+RedirectMatch ^/$ /facialy/

@@ -10,16 +10,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DB_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   web:
     build: .
     container_name: facialy_web
     restart: unless-stopped
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    # En producción se usa .env (generado por el workflow); en local, `ENV_FILE=.env.local`
     env_file:
-      - .env
+      - ${ENV_FILE:-.env}
     ports:
       - "127.0.0.1:8000:8000"
 

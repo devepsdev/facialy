@@ -1,324 +1,213 @@
-# Facialy — Sistema de Control de Acceso Facial
+# Facialy — Control de acceso facial
 
-Sistema de reconocimiento facial para control de acceso empresarial. Los empleados se registran mediante su webcam; el modelo EigenFace aprende su rostro en segundos y, a partir de ese momento, los identifica en tiempo real simulando la concesión de acceso.
+Sistema de control de acceso con reconocimiento facial en tiempo real. Los empleados se registran con la webcam desde el navegador, un **kiosco** reconoce a quien llega y decide si puede entrar (horario, estado), y cada evento queda auditado en un **dashboard** con filtros y exportación CSV.
 
-Proyecto fullstack desarrollado por **[DevEps](https://github.com/devepsdev)** como portfolio de ingeniería de software.
-
----
-
-## Características
-
-- **Registro desde el navegador** — captura 100 fotogramas via `getUserMedia`, no se requiere cámara en el servidor
-- **Entrenamiento on-demand** — OpenCV EigenFaceRecognizer entrenado al vuelo; las fotos se eliminan del disco tras el entrenamiento
-- **Reconocimiento en vivo** — bounding boxes con nombre superpuestos sobre el vídeo en tiempo real
-- **CRUD de empleados** — alta completa o registro rápido desde la demo + edición inline posterior
-- **Logs de acceso** — historial de intentos con confianza, resultado y timestamp
-- **Dashboard** — métricas diarias de accesos concedidos, denegados y desconocidos
-- **SPA con Django** — el build de React se sirve directamente desde Gunicorn + WhiteNoise, sin Node en producción
-- **Docker multi-stage** — imagen final mínima (python:3.12-slim) con el frontend ya compilado dentro
-- **CI/CD automático** — push a `main` despliega en el servidor via GitHub Actions con runner self-hosted
+Proyecto fullstack de **[DevEps](https://github.com/devepsdev)**, desplegado con CI/CD en una **Orange Pi 5 (ARM64)**.
 
 ---
 
-## Stack Tecnológico
+## Qué hace
 
-| Capa | Tecnología | Versión |
-|------|-----------|---------|
-| Backend | Django + Django REST Framework | 6.0.2 / 3.16 |
-| Visión artificial | OpenCV contrib (headless) | 4.13.0 |
-| Base de datos | PostgreSQL | 16 |
-| Frontend | React + Vite | 19 / 7 |
-| Estilos | Tailwind CSS v4 | 4.x |
-| Enrutado | React Router | 7 |
-| HTTP client | Axios | 1.x |
-| Servidor WSGI | Gunicorn | — |
-| Static files | WhiteNoise | 6.x |
-| Contenedores | Docker + Docker Compose | — |
-| CI/CD | GitHub Actions (self-hosted) | — |
+| Área | Funcionalidad |
+|------|---------------|
+| **Demo pública** | Te registras con tu webcam en unos segundos y compruebas que te reconoce. Todo ocurre en una sesión efímera **en memoria**: no se escribe nada en la base de datos y caduca sola. |
+| **Registro de empleados** | Alta desde el panel + captura guiada del rostro (30 fotogramas válidos) con consentimiento explícito. Re-registro y borrado individual del dato biométrico. |
+| **Kiosco** | Reconocimiento continuo, veredicto a pantalla completa (concedido / denegado / no identificado), aviso sonoro, historial en vivo y registro automático con anti-duplicados. |
+| **Reglas de acceso** | Empleado inactivo → denegado. Horario por empleado con margen configurable, incluidos **turnos nocturnos**. Cada denegación guarda su motivo. |
+| **Dashboard** | KPIs del día vs. ayer, accesos de 7 días, reparto de resultados, franja horaria, ranking de empleados, actividad reciente (auto-refresco). |
+| **Registro de accesos** | Filtros por resultado, fechas y empleado; paginación; **exportación CSV** (protegida contra inyección de fórmulas). |
+| **Cuentas y roles** | Registro público + login con **JWT**. Cuatro roles: **invitado** (solo lectura, solo datos de demo), **usuario**, **administrador** y **superadmin**. |
+| **Mi perfil (usuario)** | Registra tu propio rostro, **verificación 1:1** en vivo, historial propio y borrado de tu huella o de toda tu cuenta (derecho de supresión). |
+| **Superadmin** | Gestión de cuentas (rol, activar/desactivar, borrar) y **registro de auditoría** (logins, fallos, cambios de rol, borrados). |
+| **Seguridad** | Access token de 15 min en memoria + refresh rotatorio y revocable en cookie `httpOnly; SameSite=Strict`; bloqueo tras 5 fallos; throttling; mensajes que no revelan qué emails existen; `DEBUG` apagado por defecto. |
 
----
+### Roles y permisos
+
+| | Invitado | Usuario | Admin | Superadmin |
+|---|:-:|:-:|:-:|:-:|
+| Demo pública | ✅ | ✅ | ✅ | ✅ |
+| Mi perfil: registrar/verificar mi rostro, borrar mis datos | — | ✅ | ✅ | ✅ |
+| Dashboard / empleados / accesos (lectura) | ✅ *solo datos demo* | — | ✅ | ✅ |
+| Alta, edición, aprobación y borrado de empleados; registrar rostros ajenos | — | — | ✅ | ✅ |
+| Kiosco (reconocimiento 1:N + registro) | — | — | ✅ | ✅ |
+| Exportar CSV | ✅ *demo* | — | ✅ | ✅ |
+| Gestión de cuentas y auditoría | — | — | — | ✅ |
+
+Las cuentas creadas por registro público nacen como **usuario** y con la ficha **pendiente de aprobación**: pueden verificar su identidad, pero el kiosco las deniega hasta que un administrador las apruebe. El rol se comprueba en el servidor en cada petición; el invitado nunca ve datos reales (filtrado por `is_demo`).
+
+## Recorrido rápido (2 minutos)
+
+1. **Demo pública** (`/demo`): sin registro, con tu webcam. Prueba a taparte media cara o a meter a otra persona en el encuadre: debe salir *Desconocido*.
+2. **Panel como invitado** (`/login` → «Explorar el panel como invitado»): dashboard, empleados y accesos con datos ficticios, en solo lectura. Intenta crear un empleado: el servidor responde `403`.
+3. **Cuenta propia** (`/register`): crea tu usuario, registra tu rostro en «Mi perfil» y usa la verificación 1:1. Tu cuenta queda *pendiente de aprobación* (el acceso saldrá denegado hasta que un admin la apruebe) y puedes borrar todo con un clic.
+4. **Seguridad**: inspecciona las cookies (el refresh es `httpOnly`, no hay tokens en `localStorage`), reutiliza un refresh ya rotado (`401`) o intenta entrar a `/employees` con un usuario normal (`403`).
+
+## Cómo reconoce caras
+
+```
+ frame JPEG ──► YuNet (detección + 5 landmarks) ──► alineado ──► SFace ──► embedding 128-d
+                                                                              │
+                          similitud coseno contra las plantillas  ◄───────────┘
+                          ≥ umbral (0.40)  →  empleado identificado → reglas de acceso → registro
+```
+
+- **Sin entrenamiento.** Cada rostro se convierte en un vector; registrar a alguien nuevo **no afecta a los demás** (la v1 reentrenaba un único modelo EigenFace y solo reconocía a la última persona registrada).
+- **Solo vectores, nunca imágenes.** Se conservan hasta 12 plantillas diversas por empleado (muestreo *farthest-point* para cubrir poses y luces distintas). Borrar al empleado o su rostro elimina las plantillas (`ON DELETE CASCADE`).
+- **CPU únicamente.** Los modelos ONNX de [OpenCV Zoo](https://github.com/opencv/opencv_zoo) (YuNet 0.2 MB, SFace 37 MB) se ejecutan con `cv2.FaceDetectorYN` / `cv2.FaceRecognizerSF`. Se descargan y verifican por SHA-256 durante el build (`backend/download_models.py`).
+
+## Stack
+
+Django 6 · Django REST Framework · PostgreSQL 16 · OpenCV 4.13 (headless) · React 19 · Vite 7 · Tailwind CSS 4 · React Router 7 · Docker multi-stage · GitHub Actions (runner self-hosted en Armbian).
+
+Frontend: parallax por scroll y por ratón, tarjetas con foco que sigue al cursor, transiciones de vista entre rutas (View Transitions API), barra de progreso con `animation-timeline: scroll()`, revelado progresivo, *count-up*, marquesina, gráficos SVG propios (sin librerías) y respeto a `prefers-reduced-motion`.
 
 ## Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     Apache (reverse proxy)              │
-│              http://host/facialy/ → :8000               │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-            ┌──────────────▼──────────────┐
-            │   Django 6 + Gunicorn :8000 │
-            │                             │
-            │  /facialy/api/*  ──► DRF    │
-            │  /facialy/*      ──► SPA    │
-            │  /facialy/static/*WhiteNoise│
-            └──────┬──────────────┬───────┘
-                   │              │
-        ┌──────────▼──┐   ┌───────▼──────────┐
-        │ PostgreSQL  │   │ OpenCV EigenFace │
-        │  (logs +    │   │  face_model.xml  │
-        │  employees) │   │  label_map.json  │
-        └─────────────┘   └──────────────────┘
+Navegador ──HTTPS──► Apache (/facialy/) ──► Gunicorn + Django :8000 ──► PostgreSQL
+                                              │  ├─ /api/*   DRF (token auth)
+                                              │  ├─ /static  WhiteNoise (build de React)
+                                              │  └─ OpenCV: YuNet + SFace (en proceso)
+                                              └─ sesiones de captura: RAM, TTL 10 min
 ```
 
-### Flujo de reconocimiento facial
+> Gunicorn corre con **1 worker y 4 hilos** a propósito: las sesiones de captura viven en la memoria del proceso. Para escalar a varios workers habría que moverlas a Redis.
 
 ```
-Browser                           Django
-  │                                 │
-  │── POST /api/capture-frame/ ────►│  Haar Cascade detecta cara
-  │   (base64 JPEG × 100)           │  Guarda 160×160 px en /face_data/
-  │                                 │
-  │── POST /api/train/ ────────────►│  EigenFaceRecognizer.train()
-  │                                 │  Guarda face_model.xml
-  │                                 │  Borra /face_data/ (GDPR-friendly)
-  │                                 │  Crea registro Employee en BD
-  │                                 │
-  │── POST /api/recognize/ ────────►│  Predice identidad + confianza
-  │◄── { results: [{name, box}] } ──│  Devuelve bounding boxes
-  │                                 │
-  │  Canvas overlay dibuja cajas    │
+backend/core/
+├── faces.py        # motor: decodificación, detección, embeddings, similitud
+├── access.py       # índice de plantillas, reglas de horario, registro con cooldown
+├── sessions.py     # sesiones de captura efímeras (demo y registro de empleados)
+├── views.py        # auth, demo, empleados, kiosco, logs, dashboard
+├── views_auth.py   # JWT: login, registro, refresh rotatorio, logout, invitado
+├── views_me.py     # «Mi perfil»: rostro propio, verificación 1:1, borrado de cuenta
+├── views_admin.py  # cuentas y auditoría (superadmin)
+├── roles.py · permissions.py · audit.py
+└── tests.py        # 93 tests (modelos, reglas, JWT, roles, scoping del invitado, API, flujos completos con modelos reales)
+frontend/src/
+├── pages/          # Home, Demo, Login, Dashboard, Employees, AccessLogs, Kiosk
+├── components/     # ui, FaceCamera, FaceMesh, Navbar, Footer
+├── hooks/          # useCamera, useCapture, useEffects (parallax, reveal, count-up, loop)
+└── lib/auth.jsx    # contexto de autenticación
 ```
-
----
-
-## Estructura del proyecto
-
-```
-facialy/
-├── backend/
-│   ├── config/
-│   │   ├── settings.py          # Configuración Django
-│   │   ├── urls.py              # Rutas principales + catch-all SPA
-│   │   └── wsgi.py
-│   └── core/
-│       ├── migrations/          # 0001_initial, 0002_optional_fields
-│       ├── models.py            # Employee, AccessLog
-│       ├── serializers.py       # DRF serializers
-│       ├── services.py          # Lógica OpenCV (capture, train, recognize)
-│       ├── views.py             # ViewSets + endpoints funcionales
-│       └── urls.py              # Router DRF + URLs adicionales
-├── frontend/
-│   └── src/
-│       ├── api/client.js        # Axios con baseURL '/facialy/api/'
-│       ├── components/Navbar.jsx
-│       └── pages/
-│           ├── Home.jsx         # Landing page
-│           ├── Demo.jsx         # Demo interactiva (state machine)
-│           ├── Dashboard.jsx    # Métricas diarias
-│           ├── Employees.jsx    # CRUD empleados + edición inline
-│           └── AccessLogs.jsx   # Historial de accesos
-├── .github/workflows/deploy.yml # Pipeline CI/CD
-├── Dockerfile                   # Multi-stage build
-├── docker-compose.yml
-└── .env.example                 # Plantilla de variables de entorno
-```
-
----
 
 ## Inicio rápido
 
-### Prerrequisitos
+### En local con Docker (+ Apache de XAMPP como proxy)
 
-- Docker ≥ 24 y Docker Compose v2
-- (Opcional) Node 20 y Python 3.12 para desarrollo local sin Docker
+```powershell
+.\scripts\local-up.ps1               # PostgreSQL + Django en Docker y Apache (XAMPP) en :8080
+.\scripts\add-admin.ps1 -Email tu@correo.com -Name "Tu Nombre"   # tu cuenta de superadmin (pide la contraseña sin eco)
+# -> http://localhost:8080/facialy/
+.\scripts\local-up.ps1 -Down         # parar (añade -Purge para borrar la BD local)
+```
 
-### 1. Clonar el repositorio
+`local-up.ps1` genera `.env.local` con secretos aleatorios, levanta `docker compose` y arranca `httpd.exe` de XAMPP directamente (sin abrir el panel) con `deploy/apache.local.conf.template`, que replica el `ProxyPass /facialy/` de producción. En Linux/macOS: `docker compose up -d --build` y `scripts/add-admin.sh tu@correo.com`.
+
+### Con Docker (producción / genérico)
 
 ```bash
-git clone https://github.com/devepsdev/facialy.git
-cd facialy
+git clone https://github.com/devepsdev/facialy.git && cd facialy
+cp .env.example .env          # edita SECRET_KEY, DB_PASSWORD y ADMIN_PASSWORD
+docker compose up -d --build  # aplica migraciones y crea el admin al arrancar
 ```
 
-### 2. Configurar variables de entorno
+Disponible en `http://localhost:8000/` (en producción cuelga de `/facialy/` tras el proxy; ver `FORCE_SCRIPT_NAME`).
+
+### Desarrollo local
 
 ```bash
-cp .env.example .env
-# Edita .env con tus credenciales
+# Backend (SQLite si no defines DB_NAME)
+cd backend
+python -m venv venv && source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python download_models.py
+export DEBUG=1 FORCE_SCRIPT_NAME= GUEST_LOGIN_ENABLED=true ADMIN_PASSWORD=cambiame123
+python manage.py migrate && python manage.py ensure_admin && python manage.py seed_demo
+python manage.py runserver
+
+# Frontend (otra terminal) → http://localhost:5173/facialy/  (proxy de /facialy/api → :8000)
+cd frontend && npm install && npm run dev
 ```
 
-### 3. Levantar con Docker Compose
+La cámara requiere un contexto seguro: `localhost` o HTTPS.
+
+### Tests
 
 ```bash
-docker compose up -d --build
-docker compose exec web python manage.py migrate
+cd backend && python manage.py test     # 93 tests; los de reconocimiento necesitan los modelos ONNX
+cd frontend && npm run lint && npm run build
 ```
 
-La aplicación queda disponible en `http://localhost:8000/facialy/`.
+## Configuración
 
----
+Todas son variables de entorno (ver [.env.example](.env.example)):
 
-## Variables de entorno
+| Variable | Por defecto | Descripción |
+|----------|-------------|-------------|
+| `SECRET_KEY` | — (obligatoria) | Clave secreta de Django |
+| `DB_NAME` `DB_USER` `DB_PASSWORD` `DB_HOST` | — | PostgreSQL; sin `DB_NAME` se usa SQLite |
+| `DEBUG` | `false` | Nunca activar en producción |
+| `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` | `localhost,127.0.0.1,deveps.ddns.net` | Hosts y orígenes permitidos |
+| `ADMIN_USER` / `ADMIN_PASSWORD` | `admin` / — | Si hay contraseña, se crea/actualiza un superadmin al arrancar |
+| `GUEST_LOGIN_ENABLED` | `false` | Habilita el acceso de invitado (solo lectura, solo datos demo) |
+| `REGISTRATION_ENABLED` | `true` | Registro público de usuarios |
+| `JWT_ACCESS_MINUTES` / `JWT_REFRESH_DAYS` | `15` / `7` | Vida de los tokens |
+| `SECURE_COOKIES` | `true` (si no `DEBUG`) | Cookie del refresh con `Secure`; `false` solo en `http://localhost` |
+| `LOGIN_MAX_FAILURES` | `5` | Fallos antes del bloqueo temporal (15 min) de la cuenta |
+| `SEED_DEMO` | `false` | Genera empleados y accesos ficticios si la BD está vacía |
+| `FACE_MATCH_THRESHOLD` | `0.40` | Similitud coseno mínima. Súbela para reducir falsos positivos |
+| `ACCESS_SCHEDULE_GRACE_MINUTES` | `30` | Margen alrededor del horario |
+| `ACCESS_LOG_COOLDOWN_SECONDS` | `30` | Evita registrar el mismo evento en bucle |
 
-Crea un archivo `.env` en la raíz del proyecto a partir de `.env.example`:
+## API
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `SECRET_KEY` | Clave secreta Django | `django-insecure-...` |
-| `DB_NAME` | Nombre de la base de datos | `facialy` |
-| `DB_USER` | Usuario PostgreSQL | `facialy_user` |
-| `DB_PASSWORD` | Contraseña PostgreSQL | `superSecreta123!` |
-| `DB_HOST` | Host de la BD (en Docker: `db`) | `db` |
+Base: `/api/` · Cabecera `Authorization: Bearer <access>` salvo en los endpoints públicos.
 
-> **Nunca** subas el archivo `.env` real al repositorio. Está en `.gitignore`.
+| Método | Endpoint | Acceso | Descripción |
+|--------|----------|--------|-------------|
+| `POST` | `auth/login/` · `auth/register/` · `auth/guest/` | público (throttled) | Devuelven `{access, user}` y fijan la cookie `facialy_refresh` (httpOnly) |
+| `POST` | `auth/refresh/` · `auth/logout/` | cookie | Rota el refresh (el anterior queda en lista negra) / lo revoca |
+| `GET` | `auth/me/` | autenticado | Usuario actual y rol |
+| `GET` | `health/` · `config/` | público | Estado (BD + modelos) / configuración pública |
+| `POST` | `demo/start/` `demo/capture/` `demo/recognize/` `demo/end/` | público (throttled) | Demo efímera en memoria |
+| `GET/POST/PATCH/DELETE` | `employees/` | lectura: invitado*/admin · escritura: admin | CRUD con búsqueda, filtros y paginación |
+| `POST` | `employees/{id}/enroll/start\|capture\|finish/` | admin | Registro del rostro |
+| `DELETE` | `employees/{id}/face/` | admin | Borra solo los datos biométricos |
+| `POST` | `kiosk/recognize/` | admin | Reconoce, aplica reglas y registra |
+| `GET` | `access-logs/` · `access-logs/export/` | invitado*/admin | Historial filtrable / CSV |
+| `GET` | `dashboard/` | invitado*/admin | Métricas agregadas |
+| `GET/DELETE` | `me/profile/` | usuario | Mi ficha, historial · eliminar mi cuenta y mis datos |
+| `POST` | `me/enroll/start\|capture\|finish/` · `DELETE me/face/` | usuario | Registrar / borrar mi rostro |
+| `POST` | `me/verify/` | usuario | Verificación 1:1 contra mi propia huella |
+| `GET/PATCH/DELETE` | `users/` | superadmin | Cuentas: rol, activar/desactivar, borrar |
+| `GET` | `audit/` | superadmin | Auditoría de seguridad |
 
----
+\* El invitado solo ve datos marcados `is_demo`.
 
-## API Reference
-
-Base URL: `/facialy/api/`
-
-### Reconocimiento facial
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `capture-frame/` | Recibe frame base64, detecta cara y la almacena |
-| `POST` | `train/` | Entrena el modelo y crea registro Employee |
-| `POST` | `recognize/` | Predice identidad en un frame base64 |
-| `POST` | `cleanup/` | Elimina fotos, modelo y label map |
-
-#### POST `capture-frame/`
-
-```json
-// Request
-{ "visitor_name": "María García", "frame": "data:image/jpeg;base64,..." }
-
-// Response
-{ "count": 42, "total": 100, "face_detected": true }
+```jsonc
+// POST /api/kiosk/recognize/  { "frame": "data:image/jpeg;base64,..." }
+{ "results": [{
+    "name": "Lucía Fernández", "employee_id": 3, "department": "Ingeniería",
+    "result": "GRANTED",          // GRANTED | DENIED | UNKNOWN
+    "reason": "",                 // INACTIVE | OUTSIDE_SCHEDULE cuando se deniega
+    "similarity": 0.871, "box": [0.31, 0.18, 0.27, 0.41], "logged": true
+}]}
 ```
-
-#### POST `train/`
-
-```json
-// Request
-{ "visitor_name": "María García" }
-
-// Response
-{ "success": true, "message": "Modelo entrenado correctamente", "employee_id": 7 }
-```
-
-#### POST `recognize/`
-
-```json
-// Request
-{ "visitor_name": "María García", "frame": "data:image/jpeg;base64,..." }
-
-// Response
-{ "results": [{ "name": "María García", "confidence": 4821.3, "box": [120, 80, 160, 160] }] }
-```
-
-### CRUD Empleados
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `employees/` | Listado de empleados |
-| `POST` | `employees/` | Crear empleado (solo `first_name` es obligatorio) |
-| `GET` | `employees/{id}/` | Detalle |
-| `PATCH` | `employees/{id}/` | Actualización parcial |
-| `DELETE` | `employees/{id}/` | Eliminar |
-
-### Logs y Dashboard
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `access-logs/` | Historial de accesos |
-| `GET` | `dashboard/` | Métricas del día actual |
-
----
 
 ## CI/CD
 
-El pipeline en [.github/workflows/deploy.yml](.github/workflows/deploy.yml) se ejecuta en cada push a `main` sobre un runner **self-hosted** instalado en un Orange Pi 5 con Armbian:
+[`deploy.yml`](.github/workflows/deploy.yml): en cada push/PR se ejecutan los **tests del backend** y el **lint + build del frontend** en GitHub. Al hacer push a `main` y pasar los tests, el runner self-hosted de la Orange Pi construye la imagen, levanta los contenedores y **espera al healthcheck** antes de dar el despliegue por bueno.
 
-```
-push → main
-  └── Checkout código
-  └── Crear .env desde GitHub Secrets
-  └── docker compose up -d --build
-  └── sleep 10  (espera a PostgreSQL)
-  └── docker compose exec web python manage.py migrate
-```
+Secretos: `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `SECRET_KEY` (y opcionalmente `ADMIN_USER`, `ADMIN_PASSWORD`). El invitado, los datos de ejemplo y el registro público vienen **activados por defecto** en el despliegue; puedes desactivarlos creando las variables del repositorio `GUEST_LOGIN_ENABLED`, `SEED_DEMO` o `REGISTRATION_ENABLED` con valor `false`. Es seguro aunque haya datos reales: el invitado solo ve filas `is_demo` y el seed nunca toca datos reales.
 
-Los secretos necesarios en GitHub Actions son: `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `SECRET_KEY`.
+## Privacidad y límites (léelo antes de usarlo "en serio")
 
----
+- Los datos biométricos son **categoría especial** en el RGPD (art. 9): para un uso real necesitas base legal, información a los empleados y, normalmente, una evaluación de impacto. El flujo incluye consentimiento explícito y supresión individual, pero eso no sustituye al asesoramiento legal.
+- **No hay detección de vivacidad (anti-spoofing):** una foto o un vídeo pueden engañar al sistema. Es una limitación conocida de este enfoque; en un despliegue crítico añadiría un modelo de *liveness* o una cámara de profundidad/IR.
+- El umbral por defecto (0.40) es el recomendado por OpenCV para SFace; conviene calibrarlo con tu cámara e iluminación.
+- Las sesiones de captura están en memoria de un solo proceso (ver arquitectura).
 
-## Desarrollo local (sin Docker)
+## Licencia y contacto
 
-### Backend
-
-```bash
-cd backend
-python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt gunicorn
-cp ../.env.example ../.env  # ajusta DB_HOST=localhost
-python manage.py migrate
-python manage.py runserver
-```
-
-> OpenCV headless requiere `libgl1` en Linux: `sudo apt install libgl1-mesa-glx`
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev   # proxy a localhost:8000 para la API
-```
-
-La app estará en `http://localhost:5173`.
-
-> En desarrollo el `base` de Vite es `/facialy/static/`. Configura el proxy de Vite si quieres que las llamadas `/facialy/api/` se reenvíen al backend local.
-
----
-
-## Modelos de datos
-
-### Employee
-
-| Campo | Tipo | Obligatorio | Descripción |
-|-------|------|-------------|-------------|
-| `first_name` | `CharField` | ✅ | Nombre |
-| `last_name` | `CharField` | — | Apellido |
-| `email` | `EmailField` (unique) | — | Email corporativo |
-| `department` | `CharField` | — | Departamento |
-| `schedule_entry` | `TimeField` | — | Hora de entrada |
-| `schedule_exit` | `TimeField` | — | Hora de salida |
-| `is_active` | `BooleanField` | — | Activo/Inactivo (default: True) |
-| `created_at` | `DateTimeField` | — | Fecha de registro |
-
-> Los campos opcionales permiten el registro rápido desde la demo interactiva; se completan posteriormente desde la página de Empleados.
-
-### AccessLog
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `employee` | `FK → Employee` | Empleado identificado (nullable) |
-| `timestamp` | `DateTimeField` | Momento del intento |
-| `result` | `CharField` | `GRANTED` / `DENIED` / `UNKNOWN` |
-| `confidence` | `FloatField` | Distancia EigenFace (menor = mejor) |
-
----
-
-## Notas de seguridad para producción
-
-- Establecer `DEBUG = False` en `settings.py`
-- Definir `ALLOWED_HOSTS` con el dominio real
-- Generar una `SECRET_KEY` segura (mínimo 50 caracteres aleatorios)
-- Usar HTTPS y configurar `SECURE_SSL_REDIRECT = True`
-- El modelo facial es efímero; no persiste datos biométricos entre sesiones de demo
-
----
-
-## Licencia
-
-Proyecto de portfolio — uso libre para referencia y aprendizaje.
-Desarrollado por **DevEps** · [github.com/devepsdev](https://github.com/devepsdev)
-
-## Contacto
-
-- Portfolio: [deveps.ddns.net](https://deveps.ddns.net)
-- Email: devepsdev@gmail.com
-- LinkedIn: [www.linkedin.com/in/enrique-perez-sanchez](https://www.linkedin.com/in/enrique-perez-sanchez/)
-- GitHub: [github.com/devepsdev](https://github.com/devepsdev)
-
+Proyecto de portfolio — uso libre para referencia y aprendizaje. Desarrollado por **DevEps** · [github.com/devepsdev](https://github.com/devepsdev) · [LinkedIn](https://www.linkedin.com/in/enrique-perez-sanchez/) · devepsdev@gmail.com
