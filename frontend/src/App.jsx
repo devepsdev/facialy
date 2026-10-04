@@ -4,6 +4,7 @@ import { ShieldAlert } from "lucide-react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { Button, EmptyState, PageLoader, PageShell, ToastProvider } from "./components/ui";
+import { BASE_PATH } from "./api/client";
 import { AuthProvider, homeFor, useAuth } from "./lib/auth";
 import { useScrollParallax } from "./hooks/useEffects";
 import Home from "./pages/Home";
@@ -65,7 +66,7 @@ function Shell() {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/facialy">
+    <BrowserRouter basename={BASE_PATH || undefined}>
       <AuthProvider>
         <ToastProvider>
           <Shell />

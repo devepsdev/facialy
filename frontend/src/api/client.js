@@ -1,6 +1,10 @@
 import axios from "axios";
 
-const client = axios.create({ baseURL: "/facialy/api/" });
+// Prefijo de la app ("/facialy" detrás del proxy de la Orange Pi, "" en un subdominio propio)
+export const BASE_PATH = (import.meta.env.VITE_BASE_PATH ?? "/facialy").replace(/\/$/, "");
+export const API_BASE = `${BASE_PATH}/api/`;
+
+const client = axios.create({ baseURL: API_BASE });
 
 // El access token vive solo en memoria (no en localStorage): un XSS no puede robarlo
 // para usarlo después. El refresh token va en una cookie httpOnly que JS no puede leer.
@@ -19,7 +23,7 @@ client.interceptors.request.use((config) => {
 let refreshing = null;
 export function refreshAccess() {
   refreshing ??= axios
-    .post("/facialy/api/auth/refresh/")
+    .post(`${API_BASE}auth/refresh/`)
     .then(({ data }) => {
       setAccessToken(data.access);
       return data;

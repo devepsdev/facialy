@@ -2,7 +2,7 @@
 
 Sistema de control de acceso con reconocimiento facial en tiempo real. Los empleados se registran con la webcam desde el navegador, un **kiosco** reconoce a quien llega y decide si puede entrar (horario, estado), y cada evento queda auditado en un **dashboard** con filtros y exportación CSV.
 
-Proyecto fullstack de **[DevEps](https://github.com/devepsdev)**, desplegado con CI/CD en una **Orange Pi 5 (ARM64)**.
+Proyecto fullstack de **[DevEps](https://github.com/devepsdev)**, desplegado con CI/CD en un VPS: **[facialy.deveps.dev](https://facialy.deveps.dev)**.
 
 ---
 
@@ -57,14 +57,14 @@ Las cuentas creadas por registro público nacen como **usuario** y con la ficha 
 
 ## Stack
 
-Django 6 · Django REST Framework · PostgreSQL 16 · OpenCV 4.13 (headless) · React 19 · Vite 7 · Tailwind CSS 4 · React Router 7 · Docker multi-stage · GitHub Actions (runner self-hosted en Armbian).
+Django 6 · Django REST Framework · PostgreSQL 16 · OpenCV 4.13 (headless) · React 19 · Vite 7 · Tailwind CSS 4 · React Router 7 · Docker multi-stage · GitHub Actions (runner self-hosted) · nginx + Let's Encrypt.
 
 Frontend: parallax por scroll y por ratón, tarjetas con foco que sigue al cursor, transiciones de vista entre rutas (View Transitions API), barra de progreso con `animation-timeline: scroll()`, revelado progresivo, *count-up*, marquesina, gráficos SVG propios (sin librerías) y respeto a `prefers-reduced-motion`.
 
 ## Arquitectura
 
 ```
-Navegador ──HTTPS──► Apache (/facialy/) ──► Gunicorn + Django :8000 ──► PostgreSQL
+Navegador ──HTTPS──► nginx (facialy.deveps.dev) ──► Gunicorn + Django :8000 ──► PostgreSQL
                                               │  ├─ /api/*   DRF (token auth)
                                               │  ├─ /static  WhiteNoise (build de React)
                                               │  └─ OpenCV: YuNet + SFace (en proceso)
@@ -112,7 +112,7 @@ cp .env.example .env          # edita SECRET_KEY, DB_PASSWORD y ADMIN_PASSWORD
 docker compose up -d --build  # aplica migraciones y crea el admin al arrancar
 ```
 
-Disponible en `http://localhost:8000/` (en producción cuelga de `/facialy/` tras el proxy; ver `FORCE_SCRIPT_NAME`).
+Disponible en `http://localhost:8000/`. La app puede vivir en la raíz de un dominio (`BASE_PATH=` y `FORCE_SCRIPT_NAME=` vacíos, como en producción) o bajo un prefijo como `/facialy` (valor por defecto, el que usa el entorno local con XAMPP).
 
 ### Desarrollo local
 
@@ -148,7 +148,8 @@ Todas son variables de entorno (ver [.env.example](.env.example)):
 | `SECRET_KEY` | — (obligatoria) | Clave secreta de Django |
 | `DB_NAME` `DB_USER` `DB_PASSWORD` `DB_HOST` | — | PostgreSQL; sin `DB_NAME` se usa SQLite |
 | `DEBUG` | `false` | Nunca activar en producción |
-| `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` | `localhost,127.0.0.1,deveps.ddns.net` | Hosts y orígenes permitidos |
+| `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` | `localhost,127.0.0.1,deveps.ddns.net,facialy.deveps.dev` | Hosts y orígenes permitidos |
+| `BASE_PATH` / `FORCE_SCRIPT_NAME` | `/facialy` | Prefijo de la app (build del frontend / Django). Vacíos para servirla en la raíz de un dominio |
 | `ADMIN_USER` / `ADMIN_PASSWORD` | `admin` / — | Si hay contraseña, se crea/actualiza un superadmin al arrancar |
 | `GUEST_LOGIN_ENABLED` | `false` | Habilita el acceso de invitado (solo lectura, solo datos demo) |
 | `REGISTRATION_ENABLED` | `true` | Registro público de usuarios |
@@ -197,9 +198,9 @@ Base: `/api/` · Cabecera `Authorization: Bearer <access>` salvo en los endpoint
 
 ## CI/CD
 
-[`deploy.yml`](.github/workflows/deploy.yml): en cada push/PR se ejecutan los **tests del backend** y el **lint + build del frontend** en GitHub. Al hacer push a `main` y pasar los tests, el runner self-hosted de la Orange Pi construye la imagen, levanta los contenedores y **espera al healthcheck** antes de dar el despliegue por bueno.
+[`deploy.yml`](.github/workflows/deploy.yml): en cada push/PR se ejecutan los **tests del backend** y el **lint + build del frontend** en GitHub. Al hacer push a `main` y pasar los tests, el runner self-hosted del VPS (etiqueta `vps`) sincroniza el código en `/opt/apps/facialy`, construye la imagen, levanta los contenedores y **espera al healthcheck** antes de dar el despliegue por bueno.
 
-Secretos: `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `SECRET_KEY` (y opcionalmente `ADMIN_USER`, `ADMIN_PASSWORD`). El invitado, los datos de ejemplo y el registro público vienen **activados por defecto** en el despliegue; puedes desactivarlos creando las variables del repositorio `GUEST_LOGIN_ENABLED`, `SEED_DEMO` o `REGISTRATION_ENABLED` con valor `false`. Es seguro aunque haya datos reales: el invitado solo ve filas `is_demo` y el seed nunca toca datos reales.
+La configuración de producción (secretos de Django y PostgreSQL, `BASE_PATH=` vacío, hosts) vive solo en el servidor, en `/opt/apps/facialy/.env`, y el workflow nunca la sobrescribe. Para crear o cambiar tu superadmin: `.\scripts\add-admin.ps1 -Email tu@correo.com -Remote vps`. El invitado, los datos de ejemplo y el registro público están activados; es seguro aunque haya datos reales: el invitado solo ve filas `is_demo` y el seed nunca toca datos reales.
 
 ## Privacidad y límites (léelo antes de usarlo "en serio")
 

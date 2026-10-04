@@ -18,7 +18,10 @@ services:
       retries: 12
 
   web:
-    build: .
+    build:
+      context: .
+      args:
+        BASE_PATH: ${BASE_PATH-/facialy}
     container_name: facialy_web
     restart: unless-stopped
     depends_on:

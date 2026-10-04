@@ -45,40 +45,36 @@ jobs:
           npm run build
 
   deploy:
-    name: Desplegar en Orange Pi
+    name: Desplegar en el VPS
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: self-hosted
+    # Runner self-hosted del VPS (etiqueta "vps"); el de la Orange Pi no la tiene
+    runs-on: [self-hosted, vps]
 
     concurrency:
       group: deploy
       cancel-in-progress: false
 
+    env:
+      APP_DIR: /opt/apps/facialy
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env file
+      # El .env (secretos, BASE_PATH vacío para servir en la raíz de facialy.deveps.dev)
+      # vive solo en el servidor: no se sobrescribe ni se borra.
+      - name: Sync code to ${{ env.APP_DIR }}
         run: |
-          umask 077
-          {
-            echo "DB_NAME=${{ secrets.DB_NAME }}"
-            echo "DB_USER=${{ secrets.DB_USER }}"
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
-            echo "DB_HOST=db"
-            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}"
-            echo "ADMIN_USER=${{ secrets.ADMIN_USER }}"
-            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
-            echo "GUEST_LOGIN_ENABLED=${{ vars.GUEST_LOGIN_ENABLED || 'true' }}"
-            echo "SEED_DEMO=${{ vars.SEED_DEMO || 'true' }}"
-            echo "REGISTRATION_ENABLED=${{ vars.REGISTRATION_ENABLED || 'true' }}"
-          } > .env
-          chmod 600 .env
+          test -f "$APP_DIR/.env" || { echo "Falta $APP_DIR/.env en el servidor"; exit 1; }
+          rsync -a --delete --exclude='.git' --exclude='.env' --exclude='.env.local' ./ "$APP_DIR"/
 
       - name: Build and deploy
+        working-directory: ${{ env.APP_DIR }}
         run: docker compose up -d --build
 
       - name: Wait for healthy service
+        working-directory: ${{ env.APP_DIR }}
         run: |
           for i in $(seq 1 40); do
             status=$(docker inspect --format '{{.State.Health.Status}}' facialy_web 2>/dev/null || echo starting)

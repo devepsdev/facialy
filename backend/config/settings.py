@@ -39,8 +39,8 @@ if not SECRET_KEY:
     else:
         raise ImproperlyConfigured('La variable de entorno SECRET_KEY es obligatoria.')
 
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,deveps.ddns.net')
-CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', 'https://deveps.ddns.net')
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,deveps.ddns.net,facialy.deveps.dev')
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', 'https://deveps.ddns.net,https://facialy.deveps.dev')
 
 
 # Application definition
@@ -192,7 +192,7 @@ SIMPLE_JWT = {
 }
 JWT_REFRESH_COOKIE = 'facialy_refresh'
 # Ruta que ve el navegador (incluye el prefijo del proxy): el refresh solo viaja a /auth/
-JWT_COOKIE_PATH = os.environ.get('JWT_COOKIE_PATH', '/facialy/api/auth/')
+JWT_COOKIE_PATH = os.environ.get('JWT_COOKIE_PATH', f"{FORCE_SCRIPT_NAME or ''}/api/auth/")
 JWT_COOKIE_SECURE = env_bool('SECURE_COOKIES', not DEBUG)
 # Bloqueo temporal de la cuenta tras demasiados intentos fallidos
 LOGIN_MAX_FAILURES = int(os.environ.get('LOGIN_MAX_FAILURES', '5'))

@@ -7,7 +7,7 @@
   .\scripts\add-admin.ps1 -Email yo@correo.com -Name "Mi Nombre"            # superadmin (por defecto)
   .\scripts\add-admin.ps1 -Email otra@correo.com -Role admin
   .\scripts\add-admin.ps1 -Email prueba@correo.com -Role user
-  .\scripts\add-admin.ps1 -Email yo@correo.com -Remote sbc                 # en la Orange Pi (ssh sbc)
+  .\scripts\add-admin.ps1 -Email yo@correo.com -Remote vps                 # en produccion (ssh vps)
 #>
 param(
     [Parameter(Mandatory)][string]$Email,

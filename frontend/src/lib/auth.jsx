@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import client, { refreshAccess, setAccessToken } from "../api/client";
+import client, { API_BASE, refreshAccess, setAccessToken } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      await axios.post("/facialy/api/auth/logout/");
+      await axios.post(`${API_BASE}auth/logout/`);
     } catch {
       /* se descarta la sesión local igualmente */
     }
