@@ -69,21 +69,7 @@ jobs:
           test -f "$APP_DIR/.env" || { echo "Falta $APP_DIR/.env en el servidor"; exit 1; }
           rsync -a --delete --exclude='.git' --exclude='.env' --exclude='.env.local' ./ "$APP_DIR"/
 
+      # Construir y arrancar lo hace un script de root con el docker-compose.yml aprobado
+      # en el VPS (/etc/facialy): el runner (usuario gh-runner) no tiene docker ni sudo general.
       - name: Build and deploy
-        working-directory: ${{ env.APP_DIR }}
-        run: docker compose up -d --build
-
-      - name: Wait for healthy service
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          for i in $(seq 1 40); do
-            status=$(docker inspect --format '{{.State.Health.Status}}' facialy_web 2>/dev/null || echo starting)
-            echo "facialy_web: $status"
-            [ "$status" = "healthy" ] && exit 0
-            sleep 3
-          done
-          docker compose logs --tail 80 web
-          exit 1
-
-      - name: Prune old images
-        run: docker image prune -f
+        run: sudo /usr/local/sbin/facialy-deploy
