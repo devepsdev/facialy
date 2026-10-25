@@ -12,7 +12,7 @@ import { useCountUp, useMouseParallax, useRevealOnScroll } from "../hooks/useEff
 
 const TECH = [
   "OpenCV", "YuNet", "SFace", "Django 6", "Django REST", "React 19", "Vite 7", "Tailwind 4",
-  "PostgreSQL", "Docker", "GitHub Actions", "Armbian", "Orange Pi 5", "Gunicorn", "WhiteNoise",
+  "PostgreSQL", "Docker", "GitHub Actions", "nginx", "Ubuntu", "Gunicorn", "WhiteNoise",
 ];
 
 const STATS = [
@@ -30,7 +30,7 @@ const FEATURES = [
   },
   {
     icon: ScanFace, title: "Reconocimiento en vivo", span: "",
-    text: "Detección YuNet + embeddings SFace con OpenCV. Múltiples rostros por fotograma, a varios FPS en una SBC ARM.",
+    text: "Detección YuNet + embeddings SFace con OpenCV. Múltiples rostros por fotograma, a varios FPS solo con CPU.",
     accent: "from-violet-400/20",
   },
   {
@@ -141,7 +141,7 @@ export default function Home() {
                   <span className={cx("absolute inline-flex size-full animate-pulse-ring rounded-full", engineUp === false ? "bg-rose-400" : "bg-emerald-400")} />
                   <span className={cx("relative inline-flex size-2 rounded-full", engineUp === false ? "bg-rose-400" : engineUp ? "bg-emerald-400" : "bg-slate-500")} />
                 </span>
-                {engineUp === false ? "Motor facial sin conexión" : "Motor facial en línea · desplegado en Orange Pi 5"}
+                {engineUp === false ? "Motor facial sin conexión" : "Motor facial en línea · desplegado en un VPS propio"}
               </Badge>
 
               <h1 className="font-display text-5xl leading-[1.02] font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
@@ -201,7 +201,7 @@ export default function Home() {
               <FloatingChip className="bottom-[9%] left-[10%]" delay="-4s">
                 <span className="grid size-8 place-items-center rounded-lg bg-violet-400/15 text-violet-300"><GitBranch className="size-4.5" /></span>
                 <div>
-                  <p className="font-semibold text-white">CI/CD → Orange Pi 5</p>
+                  <p className="font-semibold text-white">CI/CD → VPS</p>
                   <p className="font-mono text-[11px] text-slate-400">push a main · despliegue automático</p>
                 </div>
               </FloatingChip>
@@ -282,13 +282,13 @@ export default function Home() {
       <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-24 sm:px-6 lg:grid-cols-2">
         <div className="reveal">
           <Badge tone="info" className="mb-4">Ingeniería</Badge>
-          <h2 className="font-display text-4xl font-bold tracking-tight text-white">Pensado como un producto, desplegado en una SBC</h2>
+          <h2 className="font-display text-4xl font-bold tracking-tight text-white">Pensado como un producto, desplegado en un VPS propio</h2>
           <ul className="mt-6 space-y-3.5 text-slate-300">
             {[
-              "Django 6 + DRF con autenticación por token, permisos por rol y throttling.",
+              "Django 6 + DRF con autenticación JWT, permisos por rol y throttling.",
               "Motor facial desacoplado: YuNet (detección) y SFace (embeddings) vía OpenCV, sin entrenamiento ni GPU.",
               "Registrar a alguien nuevo no toca a los demás: cada empleado aporta sus propias plantillas.",
-              "PostgreSQL, Docker multi-stage, healthchecks y despliegue continuo con GitHub Actions en ARM64.",
+              "PostgreSQL, Docker multi-stage, healthchecks y despliegue continuo con GitHub Actions y un runner propio en el VPS.",
               "SPA React 19 + Tailwind 4 servida por WhiteNoise: sin Node en producción.",
             ].map((item) => (
               <li key={item} className="flex gap-3">

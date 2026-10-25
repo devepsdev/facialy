@@ -16,7 +16,7 @@ export default function Footer() {
         <Link to="/" className="flex items-center gap-2 font-display font-semibold tracking-widest text-slate-300">
           <ScanFace className="size-4 text-cyan-400" /> FACIALY
         </Link>
-        <p className="text-center">Proyecto fullstack de portfolio · Django · React · OpenCV · Orange Pi 5</p>
+        <p className="text-center">Proyecto fullstack de portfolio · Django · React · OpenCV · Docker</p>
         <a href="https://github.com/devepsdev/facialy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 transition-colors hover:text-white">
           <GithubIcon className="size-4" /> devepsdev/facialy
         </a>
