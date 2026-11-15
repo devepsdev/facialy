@@ -4,7 +4,13 @@ Sistema de control de acceso con reconocimiento facial en tiempo real. Los emple
 
 Proyecto fullstack de **[DevEps](https://github.com/devepsdev)**, desplegado con CI/CD en un VPS: **[facialy.deveps.dev](https://facialy.deveps.dev)**.
 
+![Portada de Facialy](docs/capturas/portada.png)
+
 ---
+
+## Capturas
+
+![Registro de accesos en el panel (modo invitado, datos ficticios)](docs/capturas/accesos.png)
 
 ## Qué hace
 
