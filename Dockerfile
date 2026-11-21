@@ -1,5 +1,5 @@
 # ── Etapa 1: build del frontend ──────────────────────────────────────────────
-FROM node:20-slim AS frontend
+FROM node:24-slim AS frontend
 # Prefijo de la app: /facialy (Orange Pi) o vacío (subdominio propio)
 ARG BASE_PATH=/facialy
 ENV VITE_BASE_PATH=$BASE_PATH
