@@ -63,7 +63,7 @@ Las cuentas creadas por registro público nacen como **usuario** y con la ficha 
 
 ## Stack
 
-Django 6 · Django REST Framework · PostgreSQL 16 · OpenCV 4.13 (headless) · React 19 · Vite 7 · Tailwind CSS 4 · React Router 7 · Docker multi-stage · GitHub Actions (runner self-hosted) · nginx + Let's Encrypt.
+Django 6 · Django REST Framework · PostgreSQL 16 · OpenCV 4.14 (headless) · React 19 · Vite 7 · Tailwind CSS 4 · React Router 7 · Docker multi-stage · GitHub Actions (runner self-hosted) · nginx + Let's Encrypt.
 
 Frontend: parallax por scroll y por ratón, tarjetas con foco que sigue al cursor, transiciones de vista entre rutas (View Transitions API), barra de progreso con `animation-timeline: scroll()`, revelado progresivo, *count-up*, marquesina, gráficos SVG propios (sin librerías) y respeto a `prefers-reduced-motion`.
 
